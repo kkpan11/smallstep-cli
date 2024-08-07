@@ -379,6 +379,19 @@ be stored in the 'sshpop' header.`,
 be stored in the 'nebula' header.`,
 	}
 
+	// Confirmation is a cli.Flag used to add a confirmation claim in the token.
+	Confirmation = cli.StringFlag{
+		Name:  "cnf",
+		Usage: `The <fingerprint> of the CSR to restrict this token for.`,
+	}
+
+	// ConfirmationFile is a cli.Flag used to add a confirmation claim in the
+	// tokens. It will add a confirmation kid with the fingerprint of the CSR.
+	ConfirmationFile = cli.StringFlag{
+		Name:  "cnf-file",
+		Usage: `The CSR <file> to restrict this token for.`,
+	}
+
 	// Team is a cli.Flag used to pass the team ID.
 	Team = cli.StringFlag{
 		Name:  "team",
@@ -466,6 +479,11 @@ flag exists so it can be configured in $STEPPATH/config/defaults.json.`,
 	Comment = cli.StringFlag{
 		Name:  "comment",
 		Usage: "The comment used when adding the certificate to an agent. Defaults to the subject if not provided.",
+	}
+
+	Console = cli.BoolFlag{
+		Name:  "console",
+		Usage: `Complete the flow while remaining inside the terminal.`,
 	}
 )
 

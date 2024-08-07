@@ -39,7 +39,7 @@ func certificateCommand() cli.Command {
 [**--password-file**=<file>] [**--provisioner-password-file**=<file>]
 [**--add-user**] [**--not-before**=<time|duration>] [**--comment**=<comment>]
 [**--not-after**=<time|duration>] [**--token**=<token>] [**--issuer**=<name>]
-[**--no-password**] [**--insecure**] [**--force**] [**--x5c-cert**=<file>]
+[**--console**] [**--no-password**] [**--insecure**] [**--force**] [**--x5c-cert**=<file>]
 [**--x5c-key**=<file>] [**--k8ssa-token-path**=<file>] [**--no-agent**]
 [**--kty**=<key-type>] [**--curve**=<curve>] [**--size**=<size>]
 [**--ca-url**=<uri>] [**--root**=<file>] [**--context**=<name>]`,
@@ -176,6 +176,7 @@ $  step ssh certificate --kty OKP --curve Ed25519 mariano@work id_ed25519
 			flags.Token,
 			flags.TemplateSet,
 			flags.TemplateSetFile,
+			flags.Console,
 			sshAddUserFlag,
 			sshHostFlag,
 			sshHostIDFlag,
@@ -295,7 +296,43 @@ func certificateAction(ctx *cli.Context) error {
 		}
 	}
 
-	flow, err := cautils.NewCertificateFlow(ctx)
+	var (
+		sshPub      ssh.PublicKey
+		pub, priv   interface{}
+		flowOptions []cautils.Option
+	)
+
+	if isSign {
+		// Use public key supplied as input.
+		in, err := utils.ReadFile(keyFile)
+		if err != nil {
+			return err
+		}
+
+		sshPub, _, _, _, err = ssh.ParseAuthorizedKey(in)
+		if err != nil {
+			return errors.Wrap(err, "error parsing ssh public key")
+		}
+		if sshPrivKeyFile != "" {
+			if priv, err = pemutil.Read(sshPrivKeyFile); err != nil {
+				return errors.Wrap(err, "error parsing private key")
+			}
+		}
+		flowOptions = append(flowOptions, cautils.WithSSHPublicKey(sshPub))
+	} else {
+		// Generate keypair
+		pub, priv, err = keyutil.GenerateKeyPair(kty, curve, size)
+		if err != nil {
+			return err
+		}
+
+		sshPub, err = ssh.NewPublicKey(pub)
+		if err != nil {
+			return errors.Wrap(err, "error creating public key")
+		}
+	}
+
+	flow, err := cautils.NewCertificateFlow(ctx, flowOptions...)
 	if err != nil {
 		return err
 	}
@@ -379,38 +416,6 @@ func certificateAction(ctx *cli.Context) error {
 
 		identityCSR = *csr
 		identityKey = key
-	}
-
-	var sshPub ssh.PublicKey
-	var pub, priv interface{}
-
-	if isSign {
-		// Use public key supplied as input.
-		in, err := utils.ReadFile(keyFile)
-		if err != nil {
-			return err
-		}
-
-		sshPub, _, _, _, err = ssh.ParseAuthorizedKey(in)
-		if err != nil {
-			return errors.Wrap(err, "error parsing ssh public key")
-		}
-		if sshPrivKeyFile != "" {
-			if priv, err = pemutil.Read(sshPrivKeyFile); err != nil {
-				return errors.Wrap(err, "error parsing private key")
-			}
-		}
-	} else {
-		// Generate keypair
-		pub, priv, err = keyutil.GenerateKeyPair(kty, curve, size)
-		if err != nil {
-			return err
-		}
-
-		sshPub, err = ssh.NewPublicKey(pub)
-		if err != nil {
-			return errors.Wrap(err, "error creating public key")
-		}
 	}
 
 	var sshAuPub ssh.PublicKey
