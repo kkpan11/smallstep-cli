@@ -26,6 +26,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 
+## [0.27.4] - 2024-09-13
+
+### Added
+
+- Support for signing and publishing RPM and Deb packages to GCP Artifact Registry (smallstep/cli#1246)
+
+### Changed
+
+- Update Release download URLs for RPM and DEB packages with new file name formats (smallstep/cli#1256)
+
+### Fixed
+
+- Parse crlEntryExtensions in CRLs (smallstep/cli#1262)
+- PowerShell 5.1 CLI crashes in Windows 11 (smallstep/cli#1257)
+
+### Notes
+
+- Skipping 0.27.3 to synchronize with smallstep/certificates
+
+
 ## [0.27.2] - 2024-07-18
 
 ### Added
